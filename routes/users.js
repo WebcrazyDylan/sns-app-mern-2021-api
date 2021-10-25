@@ -45,16 +45,40 @@ router.delete("/:id", async (req, res) => {
 });
 
 //get a user
-router.get("/:id", async (req, res) => {
+router.get("/", async (req, res) => {
+  const userId = req.query.userId;
+  const username = req.query.username;
   try {
-    const user = await User.findById(req.params.id);
-    // if (!user) {
-    //   return res.status(404).json("user not found");
-    // }
+    const user = userId
+      ? await User.findById(userId)
+      : await User.findOne({ username: username });
+    if (!user) {
+      return res.status(406).json("user not found");
+    }
     const { password, updatedAt, ...other } = user._doc;
     res.status(200).json(other);
   } catch (err) {
-    return res.status(500).json(err);
+    res.status(500).json(err);
+  }
+});
+
+//get friends
+router.get("/friends/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const friends = await Promise.all(
+      user.followings.map((friendId) => {
+        return User.findById(friendId);
+      })
+    );
+    let friendList = [];
+    friends.map((friend) => {
+      const { _id, username, profilePicture } = friend;
+      friendList.push({ _id, username, profilePicture });
+    });
+    res.status(200).json(friendList);
+  } catch (err) {
+    res.status(500).json(err);
   }
 });
 
@@ -69,13 +93,13 @@ router.put("/:id/follow", async (req, res) => {
         await currentUser.updateOne({ $push: { followings: req.params.id } });
         res.status(200).json("user has been followed");
       } else {
-        return res.status(403).json("you already follow this user");
+        return res.status(406).json("you already follow this user");
       }
     } catch (err) {
       return res.status(500).json(err);
     }
   } else {
-    return res.status(403).json("you can't follow yourself");
+    return res.status(406).json("you can't follow yourself");
   }
 });
 
@@ -90,13 +114,13 @@ router.put("/:id/unfollow", async (req, res) => {
         await currentUser.updateOne({ $pull: { followings: req.params.id } });
         res.status(200).json("user has been unfollowed");
       } else {
-        res.status(403).json("you don't follow this user");
+        res.status(406).json("you don't follow this user");
       }
     } catch (err) {
       res.status(500).json(err);
     }
   } else {
-    res.status(403).json("you can't unfollow yourself");
+    res.status(406).json("you can't unfollow yourself");
   }
 });
 

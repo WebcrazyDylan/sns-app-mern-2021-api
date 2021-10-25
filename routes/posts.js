@@ -21,7 +21,7 @@ router.put("/:id", async (req, res) => {
       await post.updateOne({ $set: req.body });
       return res.status(200).json("the post has been updated");
     } else {
-      return res.status(403).json("you can update only your post");
+      return res.status(406).json("you can update only your post");
     }
   } catch (err) {
     res.status(500).json(err);
@@ -36,7 +36,7 @@ router.delete("/:id", async (req, res) => {
       await post.deleteOne();
       return res.status(200).json("the post has been deleted");
     } else {
-      return res.status(403).json("you can delete only your post");
+      return res.status(406).json("you can delete only your post");
     }
   } catch (err) {
     res.status(500).json(err);
@@ -69,10 +69,10 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// post timeline posts
-router.post("/timeline/all", async (req, res) => {
+// get timeline posts
+router.get("/timeline/:userId", async (req, res) => {
   try {
-    const currentUser = await User.findById(req.body.userId);
+    const currentUser = await User.findById(req.params.userId);
     const userPosts = await Post.find({ userId: currentUser._id }).sort({
       createdAt: -1
     });
@@ -81,7 +81,21 @@ router.post("/timeline/all", async (req, res) => {
         return Post.find({ userId: friendId }).sort({ createdAt: -1 });
       })
     );
-    res.json(userPosts.concat(...friendPosts));
+    res.status(200).json(userPosts.concat(...friendPosts));
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+//get user's all posts
+router.get("/profile/:username", async (req, res) => {
+  try {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      return res.status(406).json("user not found");
+    }
+    const posts = await Post.find({ userId: user._id }).sort({ createdAt: -1 });
+    res.status(200).json(posts);
   } catch (err) {
     res.status(500).json(err);
   }

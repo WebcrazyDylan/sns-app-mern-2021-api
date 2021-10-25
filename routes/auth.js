@@ -5,6 +5,15 @@ const bcrypt = require("bcrypt");
 //REGISTER
 router.post("/register", async (req, res) => {
   try {
+    const exitName = await User.findOne({ username: req.body.username });
+    if (exitName) {
+      return res.status(406).json({ message: "Username already exists !" });
+    }
+    const exitEmail = await User.findOne({ email: req.body.email });
+    if (exitEmail) {
+      return res.status(406).json({ message: "Email already exists !" });
+    }
+
     //generate new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
@@ -29,7 +38,7 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(404).json("user not found");
+      return res.status(406).json({ message: "Wrong user or password !" });
     }
 
     const validPassword = await bcrypt.compare(
@@ -37,7 +46,7 @@ router.post("/login", async (req, res) => {
       user.password
     );
     if (!validPassword) {
-      return res.status(400).json("wrong password");
+      return res.status(406).json({ message: "Wrong password or user !" });
     }
 
     res.status(200).json(user);
