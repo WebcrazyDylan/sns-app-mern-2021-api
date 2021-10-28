@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
@@ -12,8 +13,11 @@ const authRoute = require("./routes/auth");
 const postRoute = require("./routes/posts");
 const conversationRoute = require("./routes/conversations");
 const messageRoute = require("./routes/messages");
-
 dotenv.config();
+
+var corsOptions = {
+  origin: process.env.CLIENT_URL
+};
 
 mongoose.connect(
   process.env.MONGO_URL,
@@ -24,6 +28,7 @@ mongoose.connect(
 );
 
 //middleware
+app.use(cors(corsOptions));
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 app.use(express.json());
 app.use(helmet());
